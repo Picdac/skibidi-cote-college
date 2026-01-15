@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>ENT Skibidi</title>
+<style>
+body{margin:0;font-family:Arial;background:#eef2f7}
+#loginBox{max-width:350px;margin:100px auto;background:white;padding:20px;border-radius:10px;text-align:center}
+#app{display:none}
+#menu{width:220px;background:#1e293b;color:white;position:fixed;top:0;bottom:0;padding:10px}
+#menu div{padding:10px;margin:5px 0;cursor:pointer;border-radius:5px}
+#menu div:hover{background:#334155}
+#content{margin-left:240px;padding:20px}
+header{background:#0f172a;color:white;padding:10px;text-align:center}
+button{padding:6px 10px;margin:3px}
+table{border-collapse:collapse;width:100%}
+td,th{border:1px solid #ccc;padding:6px;text-align:center}
+</style>
+</head>
+<body>
+
+<header>ENT Skibidi 😎</header>
+
+<div id="loginBox">
+<h2>Connexion</h2>
+<input id="user" placeholder="Identifiant"><br>
+<input id="pass" type="password" placeholder="Mot de passe"><br>
+<button onclick="doLogin()">Se connecter</button>
+<p id="msg" style="color:red"></p>
+</div>
+
+<div id="app">
+<div id="menu"></div>
+<div id="content"></div>
+</div>
+
+<script>
+const comptes = {
+  sahli:{pass:"1234",role:"chef",nom:"👑 M. Sahli"},
+  adem:{pass:"1111",role:"prof",nom:"👨‍🏫 M. Adem"},
+  saad:{pass:"2222",role:"prof",nom:"👨‍🏫 M. Saad"},
+  ouachaou:{pass:"3333",role:"secretaire",nom:"🧑‍💼 M. Ouachaou"},
+  wassim:{pass:"4444",role:"eleve",nom:"👦 Wassim"},
+  warren:{pass:"5555",role:"eleve",nom:"👦 Warren"},
+  aymenD:{pass:"6666",role:"eleve",nom:"👦 Aymen Dib"},
+  aymenF:{pass:"7777",role:"eleve",nom:"👦 Aymen Ferhane"}
+};
+
+const eleves=["Wassim","Warren","Aymen Dib","Aymen Ferhane"];
+let current=null;
+let notes=JSON.parse(localStorage.getItem("notes")||"{}");
+let stars=JSON.parse(localStorage.getItem("stars")||"{}");
+
+function save(){
+  localStorage.setItem("notes",JSON.stringify(notes));
+  localStorage.setItem("stars",JSON.stringify(stars));
+}
+
+function doLogin(){
+  let u=user.value,p=pass.value;
+  if(comptes[u] && comptes[u].pass===p){
+    current=comptes[u];
+    loginBox.style.display="none";
+    app.style.display="block";
+    buildMenu();
+    content.innerHTML="<h2>Bienvenue "+current.nom+"</h2>";
+  } else msg.innerText="Erreur ❌";
+}
+
+function buildMenu(){
+  let items=[];
+  if(current.role==="chef") items=["📘 Notes","⭐ Étoiles"];
+  if(current.role==="prof") items=["📘 Notes","⭐ Étoiles"];
+  if(current.role==="secretaire") items=[];
+  if(current.role==="eleve") items=["📘 Mes Notes","⭐ Mes Étoiles"];
+
+  menu.innerHTML="";
+  items.forEach(i=>{
+    let d=document.createElement("div");
+    d.innerText=i;
+    d.onclick=()=>openTab(i);
+    menu.appendChild(d);
+  });
+}
+
+function openTab(tab){
+  if(tab==="📘 Notes") showNotes();
+  if(tab==="📘 Mes Notes") showMyNotes();
+  if(tab==="⭐ Étoiles") showStars();
+  if(tab==="⭐ Mes Étoiles") showMyStars();
+}
+
+// ----- NOTES -----
+function showNotes(){
+  let html=`<h2>📘 Notes</h2>
+  Élève: <select id="ne">${eleves.map(e=>`<option>${e}</option>`).join("")}</select>
+  Note: <input id="nv" type="number" min="0">
+  / <select id="nb"><option>5</option><option>10</option><option>20</option></select>
+  <button onclick="addNote()">Ajouter</button><hr>`;
+
+  html+=`<table><tr><th>Élève</th><th>Note</th><th>Prof</th><th>Date</th><th></th></tr>`;
+  for(let e in notes){
+    notes[e].forEach((n,i)=>{
+      html+=`<tr>
+        <td>${e}</td>
+        <td>${n.val}/${n.bar}</td>
+        <td>${n.prof}</td>
+        <td>${n.date}</td>
+        <td>${current.role==="chef"?`<button onclick="delNote('${e}',${i})">🗑️</button>`:""}</td>
+      </tr>`;
+    });
+  }
+  html+="</table>";
+  content.innerHTML=html;
+}
+
+function addNote(){
+  let e=ne.value;
+  if(!notes[e]) notes[e]=[];
+  notes[e].push({
+    val:nv.value,
+    bar:nb.value,
+    prof:current.nom,
+    date:new Date().toLocaleString()
+  });
+  save(); showNotes();
+}
+
+function delNote(e,i){
+  notes[e].splice(i,1);
+  save(); showNotes();
+}
+
+function showMyNotes(){
+  let nom=current.nom.replace("👦 ","");
+  let html="<h2>📘 Mes Notes</h2>";
+  (notes[nom]||[]).forEach(n=>{
+    html+=`${n.val}/${n.bar} - ${n.prof} (${n.date})<br>`;
+  });
+  content.innerHTML=html;
+}
+
+// ----- ÉTOILES -----
+function showStars(){
+  let html=`<h2>⭐ Étoiles</h2>
+  Élève: <select id="se">${eleves.map(e=>`<option>${e}</option>`).join("")}</select><br><br>
+  ${[1,2,3,4,5].map(n=>`<button onclick="addStar(${n})">${"⭐".repeat(n)}</button>`).join(" ")}
+  <hr>`;
+
+  for(let e in stars){
+    stars[e].forEach(s=>{
+      html+=`${e} : ${"⭐".repeat(s.n)} - ${s.prof} (${s.date})<br>`;
+    });
+  }
+  content.innerHTML=html;
+}
+
+function addStar(n){
+  let e=se.value;
+  if(!stars[e]) stars[e]=[];
+  stars[e].push({n,prof:current.nom,date:new Date().toLocaleString()});
+  save(); showStars();
+}
+
+function showMyStars(){
+  let nom=current.nom.replace("👦 ","");
+  let html="<h2>⭐ Mes Étoiles</h2>";
+  (stars[nom]||[]).forEach(s=>{
+    html+=`${"⭐".repeat(s.n)} - ${s.prof} (${s.date})<br>`;
+  });
+  content.innerHTML=html;
+}
+</script>
+<script>
+let appels = JSON.parse(localStorage.getItem("appels")||"[]");
+
+function saveAppels(){
+  localStorage.setItem("appels",JSON.stringify(appels));
+}
+
+// Ajout des onglets selon rôle
+const oldBuildMenu = buildMenu;
+buildMenu = function(){
+  oldBuildMenu();
+  if(current.role==="prof"){
+    addMenu("🧾 Fiche d'appel", showCallSheet);
+  }
+  if(current.role==="secretaire"){
+    addMenu("📂 Justifications", showJustifs);
+  }
+  if(current.role==="eleve"){
+    addMenu("🧑‍🚀 Vie Skibidi", showVieSkibidi);
+  }
+}
+
+function addMenu(name, func){
+  let d=document.createElement("div");
+  d.innerText=name;
+  d.onclick=func;
+  menu.appendChild(d);
+}
+
+// ----- FICHE D'APPEL (PROF) -----
+function showCallSheet(){
+  let html="<h2>🧾 Fiche d'appel</h2>";
+  html+=`<table>
+  <tr><th>Élève</th><th>Statut</th><th>Retard (min)</th><th>Motif</th><th>Justifié</th><th>Action</th></tr>`;
+  eleves.forEach(e=>{
+    html+=`<tr>
+      <td>${e}</td>
+      <td>
+        <select id="stat_${e}">
+          <option>Présent</option>
+          <option>Retard</option>
+          <option>Absent</option>
+        </select>
+      </td>
+      <td><input id="ret_${e}" type="number" min="0" style="width:60px"></td>
+      <td><input id="mot_${e}" placeholder="Motif"></td>
+      <td>
+        <select id="jus_${e}">
+          <option>Non</option>
+          <option>Oui</option>
+        </select>
+      </td>
+      <td><button onclick="saveCall('${e}')">Valider</button></td>
+    </tr>`;
+  });
+  html+="</table>";
+  content.innerHTML=html;
+}
+
+function saveCall(e){
+  let statut=document.getElementById("stat_"+e).value;
+  let retard=document.getElementById("ret_"+e).value;
+  let motif=document.getElementById("mot_"+e).value;
+  let justif=document.getElementById("jus_"+e).value;
+
+  appels.push({
+    eleve:e,
+    statut,
+    retard,
+    motif,
+    justif,
+    prof:current.nom,
+    date:new Date().toLocaleString(),
+    validation:"En attente"
+  });
+  saveAppels();
+  alert("Appel enregistré pour "+e);
+}
+
+// ----- SECRÉTAIRE : VALIDATION -----
+function showJustifs(){
+  let html="<h2>📂 Justifications</h2>";
+  appels.forEach((a,i)=>{
+    if(a.justif==="Oui"){
+      html+=`${a.eleve} - ${a.statut} (${a.retard||0} min) - Motif: ${a.motif} - ${a.prof}
+      <br>Statut: ${a.validation}
+      <button onclick="validate(${i},'Validé')">✔️</button>
+      <button onclick="validate(${i},'Refusé')">❌</button><hr>`;
+    }
+  });
+  content.innerHTML=html;
+}
+
+function validate(i,etat){
+  appels[i].validation=etat;
+  saveAppels();
+  showJustifs();
+}
+
+// ----- VIE SKIBIDI (ÉLÈVE) -----
+function showVieSkibidi(){
+  let nom=current.nom.replace("👦 ","");
+  let html="<h2>🧑‍🚀 Vie Skibidi</h2>";
+  appels.filter(a=>a.eleve===nom).forEach(a=>{
+    html+=`
+    ${a.statut==="Retard"?"⏰ Retard "+a.retard+" min":a.statut==="Absent"?"❌ Absent":"✅ Présent"}
+    <br>Motif: ${a.motif||"Aucun"}
+    <br>Prof: ${a.prof}
+    <br>Date: ${a.date}
+    <br>Justification: ${a.justif==="Oui"?a.validation:"Non justifié"}
+    <hr>`;
+  });
+  content.innerHTML=html;
+}
+</script>

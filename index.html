@@ -2,287 +2,203 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<title>ENT Skibidi</title>
+<title>SKIBIDI ENT 🔵</title>
 <style>
-body{margin:0;font-family:Arial;background:#eef2f7}
-#loginBox{max-width:350px;margin:100px auto;background:white;padding:20px;border-radius:10px;text-align:center}
-#app{display:none}
-#menu{width:220px;background:#1e293b;color:white;position:fixed;top:0;bottom:0;padding:10px}
-#menu div{padding:10px;margin:5px 0;cursor:pointer;border-radius:5px}
-#menu div:hover{background:#334155}
-#content{margin-left:240px;padding:20px}
-header{background:#0f172a;color:white;padding:10px;text-align:center}
-button{padding:6px 10px;margin:3px}
-table{border-collapse:collapse;width:100%}
-td,th{border:1px solid #ccc;padding:6px;text-align:center}
+body{font-family:Arial;background:#e8f0ff;margin:0}
+header{background:#0b5ed7;color:white;padding:10px;text-align:center;font-size:24px}
+.box{max-width:1000px;margin:20px auto;background:white;border-radius:10px;padding:15px}
+button{background:#0b5ed7;color:white;border:none;padding:6px 10px;border-radius:5px}
+.tab{display:inline-block;margin:5px;padding:6px 10px;background:#cfe2ff;border-radius:5px;cursor:pointer}
+.tab.active{background:white;border-bottom:3px solid #0b5ed7}
+.star{color:gold;font-size:18px}
+.trash{cursor:pointer;color:red}
 </style>
 </head>
 <body>
 
-<header>ENT Skibidi 😎</header>
+<header>📚 SKIBIDI ENT 🔵</header>
 
-<div id="loginBox">
-<h2>Connexion</h2>
-<input id="user" placeholder="Identifiant"><br>
-<input id="pass" type="password" placeholder="Mot de passe"><br>
-<button onclick="doLogin()">Se connecter</button>
-<p id="msg" style="color:red"></p>
+<div class="box" id="login">
+  <h3>Connexion</h3>
+  <input id="id" placeholder="Identifiant">
+  <input id="pw" type="password" placeholder="Mot de passe">
+  <button onclick="connect()">Se connecter</button>
+  <p id="err" style="color:red"></p>
 </div>
 
-<div id="app">
-<div id="menu"></div>
-<div id="content"></div>
+<div class="box" id="app" style="display:none">
+  <div id="tabs"></div>
+  <div id="content"></div>
 </div>
 
 <script>
-const comptes = {
-  sahli:{pass:"1234",role:"chef",nom:"👑 M. Sahli"},
-  adem:{pass:"1111",role:"prof",nom:"👨‍🏫 M. Adem"},
-  saad:{pass:"2222",role:"prof",nom:"👨‍🏫 M. Saad"},
-  ouachaou:{pass:"3333",role:"secretaire",nom:"🧑‍💼 M. Ouachaou"},
-  wassim:{pass:"4444",role:"eleve",nom:"👦 Wassim"},
-  warren:{pass:"5555",role:"eleve",nom:"👦 Warren"},
-  aymenD:{pass:"6666",role:"eleve",nom:"👦 Aymen Dib"},
-  aymenF:{pass:"7777",role:"eleve",nom:"👦 Aymen Ferhane"}
+const users={
+  sahli:{pass:"sahli123",role:"prof",name:"M. Sahli"},
+  bouhmadi:{pass:"bouhmadi123",role:"prof",name:"M. Bouhmadi"},
+  ouachaou:{pass:"secretaire",role:"secretaire",name:"M. Ouachaou"},
+  nassim:{pass:"nassim",role:"eleve",name:"Nassim"},
+  arthur:{pass:"arthur",role:"eleve",name:"Arthur"},
+  sarah:{pass:"sarah",role:"eleve",name:"Sarah"},
+  rayan:{pass:"rayan",role:"eleve",name:"Rayan"},
+  nathan:{pass:"nathan",role:"eleve",name:"Nathan"},
+  aymend:{pass:"aymend",role:"eleve",name:"Aymen Dib"},
+  aymenf:{pass:"aymenf",role:"eleve",name:"Aymen Ferhane"},
+  nael:{pass:"nael",role:"eleve",name:"Nael"}
 };
 
-const eleves=["Wassim","Warren","Aymen Dib","Aymen Ferhane"];
 let current=null;
-let notes=JSON.parse(localStorage.getItem("notes")||"{}");
-let stars=JSON.parse(localStorage.getItem("stars")||"{}");
+let data=JSON.parse(localStorage.getItem("skibidiData")||"{}");
+if(!data.notes)data.notes={};
+if(!data.stars)data.stars={};
+if(!data.appel)data.appel={};
+if(!data.validation)data.validation={};
+if(!data.missions)data.missions=[];
+if(!data.edtCancel)data.edtCancel={};
 
-function save(){
-  localStorage.setItem("notes",JSON.stringify(notes));
-  localStorage.setItem("stars",JSON.stringify(stars));
+const edt={
+  "Lundi":["10h05-10h25","15h00-15h20"],
+  "Mardi":["10h05-10h25"],
+  "Mercredi":["10h05-10h25"],
+  "Jeudi":["10h05-10h25","15h00-15h20"],
+  "Vendredi":["10h05-10h25"]
+};
+
+function save(){localStorage.setItem("skibidiData",JSON.stringify(data));}
+function eleves(){return Object.keys(users).filter(u=>users[u].role=="eleve");}
+
+function connect(){
+  if(!users[id.value]||users[id.value].pass!=pw.value){err.textContent="Erreur";return;}
+  current=id.value;
+  login.style.display="none";
+  app.style.display="block";
+  buildTabs();
 }
 
-function doLogin(){
-  let u=user.value,p=pass.value;
-  if(comptes[u] && comptes[u].pass===p){
-    current=comptes[u];
-    loginBox.style.display="none";
-    app.style.display="block";
-    buildMenu();
-    content.innerHTML="<h2>Bienvenue "+current.nom+"</h2>";
-  } else msg.innerText="Erreur ❌";
+function buildTabs(){
+  let r=users[current].role;
+  let t=["Notes","Étoiles","Missions","Emploi du temps","Appel"];
+  if(r=="secretaire")t=["Justification"];
+  let h="";
+  t.forEach(x=>h+=`<span class="tab" onclick="openTab('${x}')">${x}</span>`);
+  tabs.innerHTML=h;
+  openTab(t[0]);
 }
 
-function buildMenu(){
-  let items=[];
-  if(current.role==="chef") items=["📘 Notes","⭐ Étoiles"];
-  if(current.role==="prof") items=["📘 Notes","⭐ Étoiles"];
-  if(current.role==="secretaire") items=[];
-  if(current.role==="eleve") items=["📘 Mes Notes","⭐ Mes Étoiles"];
-
-  menu.innerHTML="";
-  items.forEach(i=>{
-    let d=document.createElement("div");
-    d.innerText=i;
-    d.onclick=()=>openTab(i);
-    menu.appendChild(d);
-  });
+function openTab(n){
+  document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
+  [...tabs.children].find(x=>x.textContent==n).classList.add("active");
+  if(n=="Notes")notesTab();
+  if(n=="Étoiles")starsTab();
+  if(n=="Missions")missionsTab();
+  if(n=="Emploi du temps")edtTab();
+  if(n=="Appel")appelTab();
+  if(n=="Justification")justifTab();
 }
 
-function openTab(tab){
-  if(tab==="📘 Notes") showNotes();
-  if(tab==="📘 Mes Notes") showMyNotes();
-  if(tab==="⭐ Étoiles") showStars();
-  if(tab==="⭐ Mes Étoiles") showMyStars();
-}
-
-// ----- NOTES -----
-function showNotes(){
-  let html=`<h2>📘 Notes</h2>
-  Élève: <select id="ne">${eleves.map(e=>`<option>${e}</option>`).join("")}</select>
-  Note: <input id="nv" type="number" min="0">
-  / <select id="nb"><option>5</option><option>10</option><option>20</option></select>
-  <button onclick="addNote()">Ajouter</button><hr>`;
-
-  html+=`<table><tr><th>Élève</th><th>Note</th><th>Prof</th><th>Date</th><th></th></tr>`;
-  for(let e in notes){
-    notes[e].forEach((n,i)=>{
-      html+=`<tr>
-        <td>${e}</td>
-        <td>${n.val}/${n.bar}</td>
-        <td>${n.prof}</td>
-        <td>${n.date}</td>
-        <td>${current.role==="chef"?`<button onclick="delNote('${e}',${i})">🗑️</button>`:""}</td>
-      </tr>`;
-    });
+/* NOTES */
+function notesTab(){
+  let h="<h3>📊 Notes</h3>";
+  if(users[current].role=="prof"){
+    h+=`<select id="e">${eleves().map(e=>`<option>${e}</option>`).join("")}</select>
+        <input id="v" placeholder="15/20">
+        <button onclick="addNote()">➕</button>
+        <button onclick="resetNotes()">🗑️ Reset</button>`;
   }
-  html+="</table>";
-  content.innerHTML=html;
-}
-
-function addNote(){
-  let e=ne.value;
-  if(!notes[e]) notes[e]=[];
-  notes[e].push({
-    val:nv.value,
-    bar:nb.value,
-    prof:current.nom,
-    date:new Date().toLocaleString()
-  });
-  save(); showNotes();
-}
-
-function delNote(e,i){
-  notes[e].splice(i,1);
-  save(); showNotes();
-}
-
-function showMyNotes(){
-  let nom=current.nom.replace("👦 ","");
-  let html="<h2>📘 Mes Notes</h2>";
-  (notes[nom]||[]).forEach(n=>{
-    html+=`${n.val}/${n.bar} - ${n.prof} (${n.date})<br>`;
-  });
-  content.innerHTML=html;
-}
-
-// ----- ÉTOILES -----
-function showStars(){
-  let html=`<h2>⭐ Étoiles</h2>
-  Élève: <select id="se">${eleves.map(e=>`<option>${e}</option>`).join("")}</select><br><br>
-  ${[1,2,3,4,5].map(n=>`<button onclick="addStar(${n})">${"⭐".repeat(n)}</button>`).join(" ")}
-  <hr>`;
-
-  for(let e in stars){
-    stars[e].forEach(s=>{
-      html+=`${e} : ${"⭐".repeat(s.n)} - ${s.prof} (${s.date})<br>`;
-    });
+  h+="<ul>";
+  for(let e in data.notes){
+    if(current==e||users[current].role!="eleve")
+      data.notes[e].forEach((n,i)=>h+=`<li>${users[e].name} : ${n} ${users[current].role=="prof"?`<span class="trash" onclick="delNote('${e}',${i})">🗑️</span>`:""}</li>`);
   }
-  content.innerHTML=html;
+  h+="</ul>";
+  content.innerHTML=h;
 }
+function addNote(){ if(!data.notes[e.value])data.notes[e.value]=[]; data.notes[e.value].push(v.value); save(); notesTab();}
+function delNote(e,i){data.notes[e].splice(i,1); save(); notesTab();}
+function resetNotes(){data.notes={}; save(); notesTab();}
 
-function addStar(n){
-  let e=se.value;
-  if(!stars[e]) stars[e]=[];
-  stars[e].push({n,prof:current.nom,date:new Date().toLocaleString()});
-  save(); showStars();
-}
-
-function showMyStars(){
-  let nom=current.nom.replace("👦 ","");
-  let html="<h2>⭐ Mes Étoiles</h2>";
-  (stars[nom]||[]).forEach(s=>{
-    html+=`${"⭐".repeat(s.n)} - ${s.prof} (${s.date})<br>`;
-  });
-  content.innerHTML=html;
-}
-</script>
-<script>
-let appels = JSON.parse(localStorage.getItem("appels")||"[]");
-
-function saveAppels(){
-  localStorage.setItem("appels",JSON.stringify(appels));
-}
-
-// Ajout des onglets selon rôle
-const oldBuildMenu = buildMenu;
-buildMenu = function(){
-  oldBuildMenu();
-  if(current.role==="prof"){
-    addMenu("🧾 Fiche d'appel", showCallSheet);
+/* ÉTOILES */
+function starsTab(){
+  let h="<h3>⭐ Étoiles</h3>";
+  if(users[current].role=="prof"){
+    h+=`<select id="e">${eleves().map(e=>`<option>${e}</option>`).join("")}</select>
+        <select id="v"><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option></select>
+        <button onclick="addStar()">➕</button>
+        <button onclick="resetStars()">🗑️ Reset</button>`;
   }
-  if(current.role==="secretaire"){
-    addMenu("📂 Justifications", showJustifs);
+  h+="<ul>";
+  for(let e in data.stars){
+    if(current==e||users[current].role!="eleve")
+      data.stars[e].forEach((s,i)=>h+=`<li>${users[e].name} : <span class="star">${"★".repeat(s)}</span> ${users[current].role=="prof"?`<span class="trash" onclick="delStar('${e}',${i})">🗑️</span>`:""}</li>`);
   }
-  if(current.role==="eleve"){
-    addMenu("🧑‍🚀 Vie Skibidi", showVieSkibidi);
+  h+="</ul>";
+  content.innerHTML=h;
+}
+function addStar(){ if(!data.stars[e.value])data.stars[e.value]=[]; data.stars[e.value].push(parseInt(v.value)); save(); starsTab();}
+function delStar(e,i){data.stars[e].splice(i,1); save(); starsTab();}
+function resetStars(){data.stars={}; save(); starsTab();}
+
+/* MISSIONS */
+function missionsTab(){
+  let h="<h3>📚 Missions</h3>";
+  if(users[current].role=="prof"){
+    h+=`<input id="m"><button onclick="addMission()">➕</button>`;
   }
+  h+="<ul>"+data.missions.map((m,i)=>`<li>${m} ${users[current].role=="prof"?`<span class="trash" onclick="delMission(${i})">🗑️</span>`:""}</li>`).join("")+"</ul>";
+  content.innerHTML=h;
 }
+function addMission(){data.missions.push(m.value); save(); missionsTab();}
+function delMission(i){data.missions.splice(i,1); save(); missionsTab();}
 
-function addMenu(name, func){
-  let d=document.createElement("div");
-  d.innerText=name;
-  d.onclick=func;
-  menu.appendChild(d);
+/* EDT */
+function edtTab(){
+  let h="<h3>🗓️ Emploi du temps</h3><ul>";
+  for(let j in edt){
+    let ann=data.edtCancel[j];
+    h+=`<li>${j} : ${ann?"❌ Annulé":edt[j].join(" / ")}
+    ${users[current].role=="prof"?(ann?`<button onclick="retablir('${j}')">🔄</button>`:`<button onclick="annuler('${j}')">❌</button>`):""}</li>`;
+  }
+  h+="</ul>";
+  content.innerHTML=h;
 }
+function annuler(j){data.edtCancel[j]=true; save(); edtTab();}
+function retablir(j){delete data.edtCancel[j]; save(); edtTab();}
 
-// ----- FICHE D'APPEL (PROF) -----
-function showCallSheet(){
-  let html="<h2>🧾 Fiche d'appel</h2>";
-  html+=`<table>
-  <tr><th>Élève</th><th>Statut</th><th>Retard (min)</th><th>Motif</th><th>Justifié</th><th>Action</th></tr>`;
-  eleves.forEach(e=>{
-    html+=`<tr>
-      <td>${e}</td>
-      <td>
-        <select id="stat_${e}">
-          <option>Présent</option>
-          <option>Retard</option>
-          <option>Absent</option>
-        </select>
-      </td>
-      <td><input id="ret_${e}" type="number" min="0" style="width:60px"></td>
-      <td><input id="mot_${e}" placeholder="Motif"></td>
-      <td>
-        <select id="jus_${e}">
-          <option>Non</option>
-          <option>Oui</option>
-        </select>
-      </td>
-      <td><button onclick="saveCall('${e}')">Valider</button></td>
-    </tr>`;
-  });
-  html+="</table>";
-  content.innerHTML=html;
-}
-
-function saveCall(e){
-  let statut=document.getElementById("stat_"+e).value;
-  let retard=document.getElementById("ret_"+e).value;
-  let motif=document.getElementById("mot_"+e).value;
-  let justif=document.getElementById("jus_"+e).value;
-
-  appels.push({
-    eleve:e,
-    statut,
-    retard,
-    motif,
-    justif,
-    prof:current.nom,
-    date:new Date().toLocaleString(),
-    validation:"En attente"
-  });
-  saveAppels();
-  alert("Appel enregistré pour "+e);
-}
-
-// ----- SECRÉTAIRE : VALIDATION -----
-function showJustifs(){
-  let html="<h2>📂 Justifications</h2>";
-  appels.forEach((a,i)=>{
-    if(a.justif==="Oui"){
-      html+=`${a.eleve} - ${a.statut} (${a.retard||0} min) - Motif: ${a.motif} - ${a.prof}
-      <br>Statut: ${a.validation}
-      <button onclick="validate(${i},'Validé')">✔️</button>
-      <button onclick="validate(${i},'Refusé')">❌</button><hr>`;
+/* APPEL */
+function appelTab(){
+  let h="<h3>📝 Appel</h3>";
+  if(users[current].role=="prof"){
+    h+=`<select id="e">${eleves().map(e=>`<option>${e}</option>`).join("")}</select>
+        <select id="v"><option>Présent</option><option>Absent</option><option>Retard</option></select>
+        <button onclick="setAppel()">Valider</button>`;
+  }
+  h+="<ul>";
+  eleves().forEach(e=>{
+    if(current==e||users[current].role!="eleve"){
+      let st=data.appel[e]||"-";
+      let val=data.validation[e]||"⏳ En attente";
+      h+=`<li>${users[e].name} : ${st} (${val})</li>`;
     }
   });
-  content.innerHTML=html;
+  h+="</ul>";
+  content.innerHTML=h;
 }
+function setAppel(){data.appel[e.value]=v.value; data.validation[e.value]="⏳ En attente"; save(); appelTab();}
 
-function validate(i,etat){
-  appels[i].validation=etat;
-  saveAppels();
-  showJustifs();
+/* SECRETAIRE */
+function justifTab(){
+  let h="<h3>📄 Justification d'absence</h3><ul>";
+  for(let e in data.appel){
+    h+=`<li>${users[e].name} : ${data.appel[e]} 
+    <button onclick="valide('${e}')">✅</button>
+    <button onclick="refuse('${e}')">❌</button></li>`;
+  }
+  h+="</ul>";
+  content.innerHTML=h;
 }
-
-// ----- VIE SKIBIDI (ÉLÈVE) -----
-function showVieSkibidi(){
-  let nom=current.nom.replace("👦 ","");
-  let html="<h2>🧑‍🚀 Vie Skibidi</h2>";
-  appels.filter(a=>a.eleve===nom).forEach(a=>{
-    html+=`
-    ${a.statut==="Retard"?"⏰ Retard "+a.retard+" min":a.statut==="Absent"?"❌ Absent":"✅ Présent"}
-    <br>Motif: ${a.motif||"Aucun"}
-    <br>Prof: ${a.prof}
-    <br>Date: ${a.date}
-    <br>Justification: ${a.justif==="Oui"?a.validation:"Non justifié"}
-    <hr>`;
-  });
-  content.innerHTML=html;
-}
+function valide(e){data.validation[e]="Validé"; save(); justifTab();}
+function refuse(e){data.validation[e]="Refusé"; save(); justifTab();}
 </script>
+</body>
+</html>
+
+
